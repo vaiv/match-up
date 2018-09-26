@@ -15,11 +15,14 @@ public class Player implements matchup.sim.Player {
 
 	private List<Integer> availableRows;
 	private PlayerData Opponent, Self;
-	private int Opponent_score,Self_score;
+	private int Opponent_score,Self_score,tie;
 	private Random rand;
-	private boolean playHome, WonLast, first_game;
+	private boolean playHome, WonLast, first_game, counter_strategy;
 	private Integer lossStreak;
 	public Player() {
+		Opponent_score = 0;
+		Self_score = 0;
+		tie=0;
 		rand = new Random();
 		skills = new ArrayList<Integer>();
 		PrevSkills = new ArrayList<Integer>();
@@ -27,6 +30,7 @@ public class Player implements matchup.sim.Player {
 		availableRows = new ArrayList<Integer>();
 		WonLast=true;
 		first_game = true;
+		counter_strategy=true;
 		lossStreak = 0;
 		for (int i=0; i<3; ++i) availableRows.add(i);
 	}
@@ -69,6 +73,17 @@ public class Player implements matchup.sim.Player {
 		return skillset;		
 	}
 
+	private List<Integer> playNines()
+	{
+		List<Integer> skillset = new ArrayList<Integer>();
+		for(int i=0;i<5;i++) skillset.add(9);
+		for(int i=0;i<5;i++) skillset.add(8);
+		for(int i=0;i<5;i++) skillset.add(1);
+		//for(int i=0;i<4;i++) skillset.add(4);
+		//skillset.add(2);
+		return skillset;		
+	}
+
 
 	private void Analyze()
 	{
@@ -89,31 +104,49 @@ public class Player implements matchup.sim.Player {
 				Self_score = hist.get(hist.size()-1).playerB.score + hist.get(hist.size()-2).playerB.score;
 			}
 
+
+		if(hist.size()>=5)
+		{
+		
+		}
+
 		if(Opponent!=null) 
 		{
 			if(Opponent_score> Self_score)
 				{
 					WonLast  = false;
 					lossStreak++;
+					tie=0;
 				}
 
 			else if(Opponent_score == Self_score)
 			{
+				tie++;
 				System.out.println("last game was a tie thus keeping previous team");
-				if(lossStreak>0) WonLast = false;
+				System.out.println(Integer.toString(tie));
+				if(tie>=3) 
+				{
+					WonLast = false;
+					lossStreak = tie;
+				}
 				else WonLast = true; 
 			}
 			else
 				{
 					WonLast = true;
 					lossStreak = 0;
+					tie=0;
 				}
 		}
 	}
 
 	public List<Integer> getNew()
 	{
-		List<Integer> oppSkills = Opponent.skills;
+		List<Integer> oppSkills = new ArrayList<Integer>();
+		for(int i=0;i<Opponent.skills.size();i++)
+		{
+			oppSkills.add(Opponent.skills.get(i));
+		}
 		Collections.sort(oppSkills);
 		Integer Count[] = new Integer[11];
 		for(int i=0;i<11;i++) Count[i] =0;
@@ -144,6 +177,7 @@ public class Player implements matchup.sim.Player {
 	private void improveSkills()
 	{
 			Collections.sort(skills);
+			if(lossStreak>4) counter_strategy = !counter_strategy;
 
 			for(int i=0;i<15;i++)
 			{
@@ -155,20 +189,64 @@ public class Player implements matchup.sim.Player {
 			   
 	}
 
+	private void counterSkills()
+	{
+		List<Integer> oppSkills = new ArrayList<Integer>();
+		for(int i=0;i<Opponent.skills.size();i++)
+		{
+			oppSkills.add(Opponent.skills.get(i));
+		}
+		Collections.sort(oppSkills);
+		Integer Count[] = new Integer[11];
+		for(int i=0;i<11;i++) Count[i] =0;
+		
+		for(int i=0;i<oppSkills.size();i++)
+		{
+			Count[oppSkills.get(i)-1]++;
+		}
+		if(Count[9] + Count[10] >= 5) /// Mostly 9's are highest 
+			oppSkills = playSevens();
+		else if(Count[6]>=8) 					///opponent using the sevens strategy
+			oppSkills = playNines();
+		else if(Count[8] + Count[7] >= 6)			/// If somewhat balanced
+			oppSkills = playNines();
+		else 							/// improve upon opponent's distribution
+		for(int i=0;i<15;i++)
+		{
+			if(i<6)
+				oppSkills.set(i,oppSkills.get(i)+3);
+			else
+				oppSkills.set(i,oppSkills.get(i)-2);
+		}
+
+		skills = oppSkills;
+		//return oppSkills;
+		
+		
+	}
 	public List<Integer> getSkills() {	
              
 		skills.clear();
 
 		if(!first_game)
 		for(int i=0;i<15;i++) skills.add(PrevSkills.get(i));
+
+
 		Analyze();
 
 		
-		if(!WonLast && lossStreak<4)
+		if(!WonLast && lossStreak<2)
 		  skills = getNew();
 
-		else if(lossStreak>=4)
-		  improveSkills();
+		else if(lossStreak>=2)
+	          improveSkills();
+
+		else if(!first_game && tie==0 && counter_strategy)	
+		 {
+			counterSkills();
+		}
+		else if(!first_game)
+			skills = getNew();
 		
 		if(first_game)
 		{
@@ -193,6 +271,8 @@ public class Player implements matchup.sim.Player {
 		PrevSkills.clear();
 		for(int i=0;i<skills.size();i++) PrevSkills.add(skills.get(i));
 		
+
+		Collections.shuffle(skills);
 		return skills;
 	}
 
