@@ -13,7 +13,8 @@ import java.util.Scanner;
 public class project 
 {
 	// File to Read
-	private static String file_location = "C:\\Users\\Andrew\\Desktop\\match-up\\log.txt";
+	//private static String file_location = "C:\\Users\\Andrew\\Desktop\\match-up\\log.txt";
+	private static String file_location = "/home/andrew/Desktop/match-up/log.txt";
 	
 	private static int LINE_SIZE = (5 * 2) + 1;
 	private static String [] filtered_chars = {"[", "]", ","};
@@ -32,8 +33,10 @@ public class project
 	private static String team_two = "random";
 	
 	// Print both datasets here
-	private static String team_one_home_data = "C:\\Users\\Andrew\\Desktop\\HOME_"+team_one+".csv";
-	private static String team_one_away_data = "C:\\Users\\Andrew\\Desktop\\HOME_"+team_two+".csv";
+	private static String team_one_home_data = "/home/andrew/Desktop/HOME_"+team_one+".csv";
+	private static String team_one_away_data = "/home/andrew/Desktop/HOME_"+team_two+".csv";
+	//private static String team_one_home_data = "C:\\Users\\Andrew\\Desktop\\HOME_"+team_one+".csv";
+	//private static String team_one_away_data = "C:\\Users\\Andrew\\Desktop\\HOME_"+team_two+".csv";
 	
 	public static void main(String [] args)
 	{
@@ -52,7 +55,7 @@ public class project
 			// This is where Team 1 is ALWAYS HOME
 			print_home_csv(team_one_home);
 			// This is where Team 1 is ALWAYS AWAY		
-			//print_away_csv();
+			print_away_csv();
 		}
 		catch (IOException e) 
 		{
@@ -73,6 +76,12 @@ public class project
 			while(scr.hasNext())
 			{
 				line = scr.nextLine();
+				if(line.contains("******** Results ********"))
+				{
+					//CLOSE NOW!
+					scr.close();
+					break;
+				}
 				if(line.contains("Home:"))
 				{
 					line_parts = line.split(" ");
@@ -87,7 +96,7 @@ public class project
 					}
 					else
 					{
-						System.err.println("ERROR INVALID TEAM NAMES!");
+						System.err.println("ERROR INVALID TEAM NAME!" + line_parts[1]);
 					}
 				}
 				if (line.contains("Round"))
@@ -100,6 +109,13 @@ public class project
 					line = scr.nextLine();
 					line = filter_characters(line);
 					line_parts = line.split(" ");
+					if(!line_parts[0].equals("Player"))
+					{
+						line = scr.nextLine();
+						line = filter_characters(line);
+						line_parts = line.split(" ");
+					}
+					System.out.println(line);
 					for(int i = 0; i < 5; i++)
 					{
 						tuple[i] = Integer.parseInt(line_parts[4+i]);
@@ -109,6 +125,12 @@ public class project
 					line = scr.nextLine();
 					line = filter_characters(line);
 					line_parts = line.split(" ");
+					if(!line_parts[0].equals("Player"))
+					{
+						line = scr.nextLine();
+						line = filter_characters(line);
+						line_parts = line.split(" ");
+					}
 					for(int i = 0; i < 5; i++)
 					{
 						tuple[i+5] = Integer.parseInt(line_parts[4+i]);
@@ -131,28 +153,39 @@ public class project
 					data_entry[3] = variance(tuple, 5, 10);
 					
 					// Fill up y with score
-					if(team_one_score > team_two_score)
-					{
-						tuple[10] = 1;
-					}
-					else if(team_one_score == team_two_score)
-					{
-						tuple[10] = 0;
-					}
-					else
-					{
-						tuple[10] = -1;
-					}
-					
 					if(is_Home)
 					{
 						team_one_home.add(tuple);
 						data_one.add(data_entry);
+						if(team_one_score > team_two_score)
+						{
+							tuple[10] = -1;
+						}
+						else if(team_one_score == team_two_score)
+						{
+							tuple[10] = 0;
+						}
+						else
+						{
+							tuple[10] = 1;
+						}
 					}
 					else
 					{
 						team_one_away.add(tuple);
 						data_two.add(data_entry);
+						if(team_one_score > team_two_score)
+						{
+							tuple[10] = 1;
+						}
+						else if(team_one_score == team_two_score)
+						{
+							tuple[10] = 0;
+						}
+						else
+						{
+							tuple[10] = -1;
+						}
 					}
 				}
 			}
@@ -170,7 +203,7 @@ public class project
 		BufferedWriter writer = new BufferedWriter(new FileWriter(team_one_home_data));
 		String output = "";
 		writer.write("Home_1,Home_2,Home_3,Home_4,Home_5,Away_1,Away_2,Away_3,Away_4,Away_5,"
-				+ "L1_mean,L1_variance,L2_mean,L2_variance,Win/Loss/Tie\n");
+				+ "Home_mean,Home_variance,Away_mean,Away_variance,Win/Loss/Tie\n");
 		for (int i = 0; i < tuples.size();i++)
 		{
 			/*
@@ -217,7 +250,7 @@ public class project
 		BufferedWriter writer = new BufferedWriter(new FileWriter(team_one_away_data));
 		String output = "";
 		writer.write("Home_1,Home_2,Home_3,Home_4,Home_5,Away_1,Away_2,Away_3,Away_4,Away_5,"
-				+ "L1_mean,L1_variance,L2_mean,L2_variance,Win/Loss/Tie\n");
+				+ "Home_mean,Home_variance,Away_mean,Away_variance,Win/Loss/Tie\n");
 		for (int i = 0; i < team_one_away.size();i++)
 		{
 			/*
